@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 
 namespace test_rename_tool
 {
@@ -7,7 +9,8 @@ namespace test_rename_tool
     {
         static async Task Main(string[] args)
         {
-           await ProcessImdbDataAsync();
+            //await ProcessImdbDataAsync();
+            SearchAndGetFiles();
         }
 
         static async Task DownloadDatasetAsync()
@@ -52,8 +55,6 @@ namespace test_rename_tool
 
             string extractionPath = folderPath;
             string extractedFileName = Path.GetFileNameWithoutExtension(localFilePath);
-
-            //Directory.CreateDirectory(extractionPath);
 
             using (FileStream fileStream = new FileStream(localFilePath, FileMode.Open))
             using (GZipStream gzipStream = new GZipStream(fileStream, CompressionMode.Decompress))
@@ -119,6 +120,77 @@ namespace test_rename_tool
             {
                 Console.WriteLine("An error occurred: " + ex.Message);
             }
+        }
+
+        static void SearchAndGetFiles()
+        {
+
+            while (true)
+            {
+                try
+                {
+                    Console.Write("Enter a file path: ");
+                    string filePath = Console.ReadLine()+"\\";
+
+                    if (!Directory.Exists(filePath))
+                    {
+                        Console.WriteLine("File path not found. Please try again.");
+                        continue;
+                    }
+
+                    string fileExtension = GetValidFileExtension();
+
+                    string[] files = Directory.GetFiles(Path.GetDirectoryName(filePath), "*" + fileExtension);
+                    List<string> fileList = new List<string>();
+
+                    Console.WriteLine("Files with the extension " + fileExtension + ":\n" );
+                    foreach (string file in files)
+                    {
+                        string cleanedFileName = CleanFileName(Path.GetFileNameWithoutExtension(file));
+                        Console.WriteLine(cleanedFileName);
+
+                    }
+
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                }
+            }
+        }
+
+        static string GetValidFileExtension()
+        {
+            while (true)
+            {
+                Console.Write("Enter a file extension (e.g., '.txt'): ");
+                string fileExtension = Console.ReadLine();
+
+                if (fileExtension.StartsWith(".") && fileExtension.Length > 1 && fileExtension.Length < 255)
+                {
+                    return fileExtension;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid file extension format. Please try again.");
+                }
+            }
+        }
+
+        static string CleanFileName(string fileName)
+        {
+            // Replace symbols like '.', ',', '-' with spaces
+            char[] separators = { '.', ',', '-' };
+            foreach (char separator in separators)
+            {
+                fileName = fileName.Replace(separator, ' ');
+            }
+
+            // Trim extra spaces
+            fileName = fileName.Trim();
+
+            return fileName;
         }
     }
 }
