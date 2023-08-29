@@ -2,6 +2,8 @@
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace test_rename_tool
 {
@@ -9,7 +11,7 @@ namespace test_rename_tool
     {
         static async Task Main(string[] args)
         {
-            //await ProcessImdbDataAsync();
+            await ProcessImdbDataAsync();
             SearchAndGetFiles();
         }
 
@@ -96,19 +98,9 @@ namespace test_rename_tool
                     .OrderBy(entry => entry.Title)
                     .ToList();
 
-                //var selectedColumnsContent = sortedData
-                //.Select(entry => $"{entry.Title}\t{entry.StartYear}")
-                //.ToList();
-
-                //File.WriteAllLines(filePath, selectedColumnsContent);
-                //stopwatch.Stop();
-                //TimeSpan elapsedTime = stopwatch.Elapsed;
-
-                //Console.WriteLine($"File has been sorted and updated. (took {elapsedTime.TotalSeconds:F2}s)");
-
                 string csvFilePath = @"Imdb_Dataset\sorted_filtered_data.csv";
                 var csvContent = sortedData
-                                 .Select(entry => $"{entry.Title} - ({entry.StartYear}),");
+                                 .Select(entry => $"{entry.Title},{entry.StartYear}");
 
                 File.WriteAllLines(csvFilePath, csvContent);
                 stopwatch.Stop();
@@ -124,31 +116,33 @@ namespace test_rename_tool
 
         static void SearchAndGetFiles()
         {
-
             while (true)
             {
                 try
                 {
-                    Console.Write("Enter a file path: ");
-                    string filePath = Console.ReadLine()+"\\";
+                    Console.Write("Enter a directory path: ");
+                    string directoryPath = Console.ReadLine();
+                    
 
-                    if (!Directory.Exists(filePath))
+                    if (!Directory.Exists(directoryPath))
                     {
-                        Console.WriteLine("File path not found. Please try again.");
+                        Console.WriteLine("Directory path not found. Please try again.");
                         continue;
                     }
 
                     string fileExtension = GetValidFileExtension();
 
-                    string[] files = Directory.GetFiles(Path.GetDirectoryName(filePath), "*" + fileExtension);
-                    List<string> fileList = new List<string>();
+                    string[] files = Directory.GetFiles(directoryPath, "*" + fileExtension);
 
-                    Console.WriteLine("Files with the extension " + fileExtension + ":\n" );
+                    Console.WriteLine("Files with the extension " + fileExtension + ":\n");
                     foreach (string file in files)
                     {
                         string cleanedFileName = CleanFileName(Path.GetFileNameWithoutExtension(file));
-                        Console.WriteLine(cleanedFileName);
-
+                        (string namePart, int year) = ProcessFilename(cleanedFileName);
+                        if (namePart != null)
+                        {
+                            SearchAndDisplayMatches(namePart, year);
+                        }
                     }
 
                     break;
@@ -160,11 +154,51 @@ namespace test_rename_tool
             }
         }
 
+        static void SearchAndDisplayMatches(string name, int year)
+        {
+            string csvFilePath = @"Imdb_Dataset\sorted_filtered_data.csv";
+            string[] csvLines = File.ReadAllLines(csvFilePath);
+
+            var matchingEntries = csvLines
+                .Select(line => line.Split(','))
+                .Where(columns => columns.Length == 2 && columns[0].Trim() == name)
+                .ToList();
+
+            if (matchingEntries.Count > 0)
+            {
+                Console.WriteLine("Matches found in sorted_filtered_data.csv:");
+                for (int i = 0; i < matchingEntries.Count; i++)
+                {
+                    Console.WriteLine($"{name} => {matchingEntries[i][1].Trim()}");
+                }
+
+                if (matchingEntries.Count > 1)
+                {
+                    Console.WriteLine("Multiple matches found. Please enter the number of the match you want (0, 1, ...): ");
+                    int selectedMatchIndex = int.Parse(Console.ReadLine());
+
+                    if (selectedMatchIndex >= 0 && selectedMatchIndex < matchingEntries.Count)
+                    {
+                        Console.WriteLine($"Selected match: {name} => {matchingEntries[selectedMatchIndex][1].Trim()}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid match selection.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("No matches found.");
+            }
+
+        }
+
         static string GetValidFileExtension()
         {
             while (true)
             {
-                Console.Write("Enter a file extension (e.g., '.txt'): ");
+                Console.Write("Enter a file extension (e.g., 'avi,mp4,mkv...'): ");
                 string fileExtension = Console.ReadLine();
 
                 if (fileExtension.StartsWith(".") && fileExtension.Length > 1 && fileExtension.Length < 255)
@@ -180,17 +214,43 @@ namespace test_rename_tool
 
         static string CleanFileName(string fileName)
         {
-            // Replace symbols like '.', ',', '-' with spaces
-            char[] separators = { '.', ',', '-' };
+            char[] separators = { '.' };
             foreach (char separator in separators)
             {
                 fileName = fileName.Replace(separator, ' ');
             }
 
-            // Trim extra spaces
             fileName = fileName.Trim();
 
             return fileName;
         }
+
+        static (string NamePart, int Year) ProcessFilename(string filename)
+        {
+            string modifiedFilename = filename.Replace('.', ' ');
+
+            Match match = Regex.Match(modifiedFilename, @"^(.*?)(\d*) (\d{4})");
+
+            if (match.Success)
+            {
+                string namePart = match.Groups[1].Value.Trim();
+                string numericPart = match.Groups[2].Value.Trim();
+                int year;
+
+                if (!string.IsNullOrEmpty(numericPart) && int.TryParse(match.Groups[3].Value, out year))
+                {
+                    int.TryParse(numericPart, out int numericValue);
+                    return (namePart, year);
+                }
+                else if (int.TryParse(match.Groups[3].Value, out year))
+                {
+                    return (namePart, year);
+                }
+            }
+
+            return (null, 0); // Return default values if pattern not found
+        }
+
+
     }
 }

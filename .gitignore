@@ -1,3 +1,9 @@
 
 test_rename_tool/test_rename_tool/bin/Debug/net6.0/Imdb_Dataset/sorted_filtered_data.csv
 test_rename_tool/test_rename_tool/bin/Debug/net6.0/Imdb_Dataset/title.basics.tsv
+*.pdb
+*.dll
+*.suo
+*.vsidx
+
+*.v2
