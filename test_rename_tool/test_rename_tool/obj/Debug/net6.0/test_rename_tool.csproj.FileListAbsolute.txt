@@ -1,0 +1,14 @@
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\bin\Debug\net6.0\test_rename_tool.exe
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\bin\Debug\net6.0\test_rename_tool.deps.json
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\bin\Debug\net6.0\test_rename_tool.runtimeconfig.json
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\bin\Debug\net6.0\test_rename_tool.dll
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\bin\Debug\net6.0\test_rename_tool.pdb
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.AssemblyInfoInputs.cache
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.AssemblyInfo.cs
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.csproj.CoreCompileInputs.cache
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.dll
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\refint\test_rename_tool.dll
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.pdb
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\test_rename_tool.genruntimeconfig.cache
+C:\Users\YohBento\Documents\GitHub\test_rename_tool\test_rename_tool\test_rename_tool\obj\Debug\net6.0\ref\test_rename_tool.dll
