@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System.Diagnostics;
+using System.IO.Compression;
 
 namespace test_rename_tool
 {
@@ -6,7 +7,7 @@ namespace test_rename_tool
     {
         static async Task Main(string[] args)
         {
-           await DownloadDatasetAsync();
+           await ProcessImdbDataAsync();
         }
 
         static async Task DownloadDatasetAsync()
@@ -65,6 +66,59 @@ namespace test_rename_tool
 
             Console.WriteLine($"Extraction completed.");
             Console.WriteLine("Sorting file...");
+        }
+
+        static async Task ProcessImdbDataAsync()
+        {
+            await DownloadDatasetAsync();
+
+            string filePath = @"Imdb_Dataset\title.basics.tsv";
+
+            try
+            {
+
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                string[] lines = File.ReadAllLines(filePath);
+
+                var sortedData = lines
+                    .Skip(1)
+                    .Select(line => line.Split('\t'))
+                    .Where(columns => columns[1] == "movie")
+                    .Select(columns => new
+                    {
+                        Title = columns[3],
+                        StartYear = columns[5],
+                        //Type = columns[1]
+                    })
+                    .OrderBy(entry => entry.Title)
+                    .ToList();
+
+                //var selectedColumnsContent = sortedData
+                //.Select(entry => $"{entry.Title}\t{entry.StartYear}")
+                //.ToList();
+
+                //File.WriteAllLines(filePath, selectedColumnsContent);
+                //stopwatch.Stop();
+                //TimeSpan elapsedTime = stopwatch.Elapsed;
+
+                //Console.WriteLine($"File has been sorted and updated. (took {elapsedTime.TotalSeconds:F2}s)");
+
+                string csvFilePath = @"Imdb_Dataset\sorted_filtered_data.csv";
+                var csvContent = sortedData
+                                 .Select(entry => $"{entry.Title} - ({entry.StartYear}),");
+
+                File.WriteAllLines(csvFilePath, csvContent);
+                stopwatch.Stop();
+                TimeSpan elapsedTime = stopwatch.Elapsed;
+
+                Console.WriteLine($"File has been sorted and updated. (took {elapsedTime.TotalSeconds:F2}s)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
         }
     }
 }
