@@ -11,7 +11,7 @@ namespace test_rename_tool
     {
         static async Task Main(string[] args)
         {
-            await ProcessImdbDataAsync();
+            //await ProcessImdbDataAsync();
             SearchAndGetFiles();
         }
 
@@ -136,10 +136,10 @@ namespace test_rename_tool
 
                     Console.WriteLine("Files with the extension " + fileExtension + ":\n");
 
-                    foreach (string cleanedName in cleanedNameList)
-                    {
-                        Console.WriteLine($"cleaned Name: {cleanedName}");
-                    }
+                    //foreach (string cleanedName in cleanedNameList)
+                    //{
+                    //    Console.WriteLine($"cleaned Name: {cleanedName}");
+                    //}
 
                     SearchAndDisplayMatches(cleanedNameList);
 
@@ -181,7 +181,7 @@ namespace test_rename_tool
             try
             {
                 List<string> csvLines = ReadCSVFile();
-                Console.WriteLine("Matching results:");
+                Console.WriteLine("Matching results:\n");
 
                 foreach (string cleanedName in cleanedNameList)
                 {
@@ -206,7 +206,7 @@ namespace test_rename_tool
                             if (selectedMatchIndex >= 0 && selectedMatchIndex < matchingEntries.Count)
                             {
                                 var selectedMatch = matchingEntries[selectedMatchIndex];
-                                Console.WriteLine($"Selected match for '{cleanedName}': {selectedMatch[0].Trim()} {selectedMatch[1].Trim()}");
+                                Console.WriteLine($"Selected match for {cleanedName,-30} \t=>\t {selectedMatch[0].Trim()} ({selectedMatch[1].Trim()})");
                             }
                             else
                             {
@@ -216,7 +216,7 @@ namespace test_rename_tool
                         else
                         {
                             var singleMatch = matchingEntries.First();
-                            Console.WriteLine($"Selected match for '{cleanedName}': {singleMatch[0].Trim()} {singleMatch[1].Trim()}");
+                            Console.WriteLine($"Selected match for {cleanedName,-30} \t=>\t {singleMatch[0].Trim()} ({singleMatch[1].Trim()})");
                         }
                     }
                     else

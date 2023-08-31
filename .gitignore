@@ -12,3 +12,4 @@ test_rename_tool/test_rename_tool/bin/Debug/net6.0/Imdb_Dataset/title.basics.tsv
 *.gz
 *.dll
 *.pdb
+*.dll
