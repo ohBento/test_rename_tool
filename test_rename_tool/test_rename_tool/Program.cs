@@ -88,7 +88,7 @@ namespace test_rename_tool
                 var sortedData = lines
                     .Skip(1)
                     .Select(line => line.Split('\t'))
-                    .Where(columns => columns[1] == "movie")
+                    .Where(columns => columns[1] == "movie" && columns[5] != "\\N")
                     .Select(columns => new
                     {
                         Title = columns[3],
@@ -98,7 +98,7 @@ namespace test_rename_tool
                     .OrderBy(entry => entry.Title)
                     .ToList();
 
-                string csvFilePath = @"Imdb_Dataset\sorted_filtered_data.csv";
+                string csvFilePath = @"Imdb_Dataset\sorted_filtered_imdb_data.csv";
                 var csvContent = sortedData
                                  .Select(entry => $"{entry.Title},{entry.StartYear}");
 
@@ -131,19 +131,50 @@ namespace test_rename_tool
 
                     string fileExtension = GetValidFileExtension();
 
-                    List<string> cleanedNameList = GetCleanedFileNames(directoryPath, fileExtension);
-                    List<string> pathFileNameList = GetFilesFromPath(directoryPath, fileExtension);
+                    Dictionary<string, string> cleanedOriginalNameMap = GetCleanedFileNames(directoryPath, fileExtension);
 
-                    Console.WriteLine("Files with the extension " + fileExtension + ":\n");
+                    if (cleanedOriginalNameMap.Count == 0)
+                    {
+                        Console.WriteLine("No valid files found in the directory. Please try again.");
+                        continue; // Skip the rest of the loop and start over
+                    }
 
-                    //foreach (string cleanedName in cleanedNameList)
-                    //{
-                    //    Console.WriteLine($"cleaned Name: {cleanedName}");
-                    //}
+                    Dictionary<string, string> selectedMatches = SearchAndDisplayMatches(cleanedOriginalNameMap);
 
-                    SearchAndDisplayMatches(cleanedNameList);
+                    if (selectedMatches.Count == 0)
+                    {
+                        Console.WriteLine();
+                    }
+                    else
+                    {
+                        Console.Write("\nDo you want to rename the files to the selected name (y/n)?: ");
+                        string renameChoice = Console.ReadLine().ToLower();
 
-                    break;
+                        if (renameChoice == "y")
+                        {
+                            Console.WriteLine();
+                            RenameFiles(directoryPath, selectedMatches, fileExtension);
+                            Console.WriteLine("\nFile renaming completed.");
+                        }
+                        else if (renameChoice == "n")
+                        {
+                            Console.WriteLine("Rename aborted.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid choice. Please enter 'y' or 'n'.");
+                        }
+                    }
+
+                    Console.Write("\nDo you want to perform another operation? (y/n): ");
+                    string continueChoice = Console.ReadLine().ToLower();
+
+                    if (continueChoice != "y")
+                    {
+                        Console.Clear();
+                        break;
+                        
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -152,9 +183,30 @@ namespace test_rename_tool
             }
         }
 
+        static void RenameFiles(string directoryPath, Dictionary<string, string> selectedMatches, string fileExtension)
+        {
+            try
+            {
+                foreach (var selectedMatch in selectedMatches)
+                {
+                    string originalFileName = selectedMatch.Key;
+                    string newFileName = selectedMatch.Value;
+                    string sourceFilePath = Path.Combine(directoryPath, originalFileName + fileExtension);
+                    string destinationFilePath = Path.Combine(directoryPath, newFileName + fileExtension);
+
+                    File.Move(sourceFilePath, destinationFilePath);
+                    Console.WriteLine($"{originalFileName,-80} =>\t {newFileName}{fileExtension}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred while renaming files: " + ex.Message);
+            }
+        }
+
         static List<string> ReadCSVFile()
         {
-            string csvFilePath = @"Imdb_Dataset\sorted_filtered_data.csv";
+            string csvFilePath = @"Imdb_Dataset\sorted_filtered_imdb_data.csv";
             List<string> csvLines = new List<string>();
 
             try
@@ -176,15 +228,21 @@ namespace test_rename_tool
             return csvLines;
         }
 
-        static void SearchAndDisplayMatches(List<string> cleanedNameList)
+        static Dictionary<string, string> SearchAndDisplayMatches(Dictionary<string, string> cleanedOriginalNameMap)
         {
+            Dictionary<string, string> selectedMatches = new Dictionary<string, string>();
+
             try
             {
                 List<string> csvLines = ReadCSVFile();
                 Console.WriteLine("Matching results:\n");
+                List<string> noMatchLines = new List<string>();
 
-                foreach (string cleanedName in cleanedNameList)
+                foreach (var cleanedOriginalPair in cleanedOriginalNameMap)
                 {
+                    string cleanedName = cleanedOriginalPair.Key;
+                    string originalFileName = cleanedOriginalPair.Value;
+
                     var matchingEntries = csvLines
                         .Select(line => line.Split(','))
                         .Where(columns => columns.Length == 2 && columns[0].Trim() == cleanedName)
@@ -192,43 +250,70 @@ namespace test_rename_tool
 
                     if (matchingEntries.Count > 0)
                     {
-                        Console.WriteLine($"Matches found for '{cleanedName}':");
+                        matchingEntries = matchingEntries
+                            .OrderBy(entry => int.TryParse(entry[1].Trim(), out int year) ? year : int.MaxValue)
+                            .ToList();
+
+                        Console.WriteLine($"Matches found for '{originalFileName}':");
                         for (int i = 0; i < matchingEntries.Count; i++)
                         {
                             Console.WriteLine($"{i}: {matchingEntries[i][0].Trim()} {matchingEntries[i][1].Trim()}");
                         }
 
-                        if (matchingEntries.Count > 1)
+                        if (matchingEntries.Count == 1)
                         {
-                            Console.Write("Multiple matches found. Please enter the number of the match you want (0, 1, ...): ");
-                            int selectedMatchIndex = int.Parse(Console.ReadLine());
+                            var selectedMatch = matchingEntries[0];
+                            Console.WriteLine($"Selected match for {originalFileName,-80} =>\t {selectedMatch[0].Trim()} ({selectedMatch[1].Trim()})");
+                            Console.WriteLine(new String('-', 130));
 
-                            if (selectedMatchIndex >= 0 && selectedMatchIndex < matchingEntries.Count)
-                            {
-                                var selectedMatch = matchingEntries[selectedMatchIndex];
-                                Console.WriteLine($"Selected match for {cleanedName,-30} \t=>\t {selectedMatch[0].Trim()} ({selectedMatch[1].Trim()})");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Invalid match selection.");
-                            }
+                            selectedMatches.Add(originalFileName, $"{selectedMatch[0].Trim()} ({selectedMatch[1].Trim()})");
                         }
                         else
                         {
-                            var singleMatch = matchingEntries.First();
-                            Console.WriteLine($"Selected match for {cleanedName,-30} \t=>\t {singleMatch[0].Trim()} ({singleMatch[1].Trim()})");
+                            while (true)
+                            {
+                                Console.Write("Please enter the number of the match you want (0, 1, ...): ");
+                                string selectedMatchIndexStr = Console.ReadLine();
+
+                                if (int.TryParse(selectedMatchIndexStr, out int selectedMatchIndex) &&
+                                    selectedMatchIndex >= 0 && selectedMatchIndex < matchingEntries.Count)
+                                {
+                                    var selectedMatch = matchingEntries[selectedMatchIndex];
+                                    Console.WriteLine($"Selected match for {originalFileName,-80} =>\t {selectedMatch[0].Trim()} ({selectedMatch[1].Trim()})");
+                                    Console.WriteLine(new String('-', 130));
+
+                                    selectedMatches.Add(originalFileName, $"{selectedMatch[0].Trim()} ({selectedMatch[1].Trim()})");
+                                    break; 
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Invalid match selection. Please enter a valid digit.");
+                                }
+                            }
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"No matches found for '{cleanedName}'.");
+                        noMatchLines.Add(originalFileName);
                     }
-                    Console.WriteLine();
                 }
+
+                Console.WriteLine("\nNo match found for:");
+                foreach (var line in noMatchLines)
+                {
+                    Match match = Regex.Match(line, @"\(\d{4}\)");
+                    if (!match.Success)
+                    {
+                        Console.WriteLine(line);
+                    }
+                }
+
+                return selectedMatches;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("An error occurred: " + ex.Message);
+                return selectedMatches;
             }
         }
 
@@ -236,7 +321,7 @@ namespace test_rename_tool
         {
             while (true)
             {
-                Console.Write("Enter a file extension (e.g., 'avi,mp4,mkv...'): ");
+                Console.Write("Enter a file extension ('e.g. .avi/mp4/mkv...'): ");
                 string fileExtension = Console.ReadLine();
 
                 if (fileExtension.StartsWith(".") && fileExtension.Length > 1 && fileExtension.Length < 255)
@@ -250,9 +335,9 @@ namespace test_rename_tool
             }
         }
 
-        static List<string> GetCleanedFileNames(string path, string extension)
+        static Dictionary<string, string> GetCleanedFileNames(string path, string extension)
         {
-            List<string> cleanedFileNames = new List<string>();
+            Dictionary<string, string> cleanedOriginalNameMap = new Dictionary<string, string>();
 
             if (Directory.Exists(path))
             {
@@ -265,13 +350,12 @@ namespace test_rename_tool
                     Match match = Regex.Match(fileName, @"^(.*)(?=\.\d{4}\.)(\.\d{4})");
                     if (match.Success)
                     {
-
-                        string namePart = match.Groups[1].Value.Trim();
-                        cleanedFileNames.Add(namePart.Replace('.', ' '));
+                        string namePart = match.Groups[1].Value.Trim().Replace('.', ' ');
+                        cleanedOriginalNameMap[namePart] = fileName;
                     }
                     else
                     {
-                        cleanedFileNames.Add(fileName);
+                        cleanedOriginalNameMap[fileName] = fileName;
                     }
                 }
             }
@@ -280,27 +364,8 @@ namespace test_rename_tool
                 Console.WriteLine("Invalid path.");
             }
 
-            return cleanedFileNames;
+            return cleanedOriginalNameMap;
         }
 
-        static List<string> GetFilesFromPath(string directoryPath, string fileExtension)
-        {
-            List<string> fileNamesFromPath = new List<string>();
-
-            var fileNames = Directory.GetFiles(directoryPath, "*" + fileExtension);
-            foreach (string fileName in fileNames)
-            {
-                if (File.Exists(fileName))
-                {
-                    fileNamesFromPath.Add(fileName);
-                }
-            }
-            return fileNamesFromPath;
-        }
     }
 }
-
-
-
-
-
